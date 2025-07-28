@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Hui - 情侣专属应用</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- LeanCloud SDK - 主CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/leancloud-storage@4.13.2/dist/av-min.js" 
+            onerror="loadBackupScript()"></script>
+    <!-- 备用CDN -->
+    <script>
+        function loadBackupScript() {
+            console.log('主CDN加载失败，尝试备用CDN...');
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/leancloud-storage@4.13.2/dist/av-min.js';
+            script.onerror = function() {
+                console.error('所有CDN都无法加载LeanCloud SDK');
+                document.getElementById('loading-view').innerHTML = `
+                    <div class="max-w-md mx-auto text-center">
+                        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                            <strong class="font-bold">网络错误！</strong>
+                            <span class="block mt-2">无法加载必要的组件，请检查网络连接后刷新页面。</span>
+                            <button onclick="location.reload()" class="bg-red-500 text-white px-4 py-2 rounded mt-3 hover:bg-red-600">
+                                重新加载
+                            </button>
+                        </div>
+                    </div>
+                `;
+            };
+            document.head.appendChild(script);
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Pacifico&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans SC', sans-serif; background-color: #f9fafb; }
+        .font-artistic { font-family: 'Pacifico', cursive; }
+        .view { display: none; }
+        .view.active { display: block; }
+        .form-switch-link { color: #ec4899; cursor: pointer; }
+        .form-switch-link:hover { text-decoration: underline; }
+        .todo-item:hover .delete-btn { opacity: 1; }
+        .anniversary-card:hover .delete-anniversary-btn { opacity: 1; }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        .segmented-control { display: flex; padding: 4px; background-color: #e5e7eb; border-radius: 0.75rem; }
+        .segmented-control .tab-button { flex: 1; padding: 8px 0; border-radius: 0.5rem; font-weight: 500; color: #4b5563; transition: all 0.2s ease-in-out; }
+        .segmented-control .tab-button.active { background-color: white; color: #1f2937; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1); }
+        .input-with-icon { position: relative; }
+        .input-with-icon svg { position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: #9ca3af; }
+        .input-with-icon input { padding-left: 2.5rem; }
+        .gradient-bg { background: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%); }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div id="app-container" class="min-h-screen">
+        <!-- 加载页面 -->
+        <div id="loading-view" class="view active text-center mt-20 p-4">
+            <div class="max-w-md mx-auto">
+                <div class="gradient-bg text-white p-8 rounded-2xl shadow-lg">
+                    <h1 class="font-artistic text-4xl mb-4">My Hui</h1>
+                    <p class="text-pink-100">正在连接服务器...</p>
+                    <div class="mt-4">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 登录注册页面 -->
+        <div id="auth-view" class="view">
+            <div class="flex min-h-screen">
+                <div class="hidden md:flex md:w-1/2 gradient-bg items-center justify-center p-12 text-white text-center">
+                    <div>
+                        <h1 class="font-artistic text-7xl leading-tight">My Hui</h1>
+                        <p class="mt-4 text-lg opacity-80">属于你们的私密空间</p>
+                        <div class="mt-8 space-y-2 text-left max-w-sm">
+                            <div class="flex items-center">
+                                <svg class="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                </svg>
+                                <span>共享待办清单</span>
+                            </div>
+                            <div class="flex items-center">
+                                <svg class="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                </svg>
+                                <span>纪念日提醒</span>
+                            </div>
+                            <div class="flex items-center">
+                                <svg class="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                </svg>
+                                <span>实时同步</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="w-full md:w-1/2 flex items-center justify-center p-6 sm:p-12 bg-white">
+                    <div class="w-full max-w-md">
+                        <h1 class="font-artistic text-5xl text-pink-500 mb-4 text-center md:hidden">My Hui</h1>
+                        
+                        <!-- 登录表单 -->
+                        <form id="login-form" class="space-y-4">
+                            <h2 class="text-2xl font-bold text-gray-800">欢迎回来</h2>
+                            <p class="text-gray-500">请登录以继续</p>
+                            <div class="input-with-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                    <path d="M.05 3.555A2 2 0 0 1 2 2h12a2 2 0 0 1 1.95 1.555L8 8.414.05 3.555ZM0 4.697v7.104l5.803-3.558L0 4.697ZM6.761 8.83l-6.57 4.027A2 2 0 0 0 2 14h12a2 2 0 0 0 1.808-1.144l-6.57-4.027L8 9.586l-1.239-.757Zm3.436-.586L16 11.803V4.697l-5.803 3.558Z"/>
+                                </svg>
+                                <input type="email" id="login-email" required placeholder="邮箱" class="mt-1 block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent">
+                            </div>
+                            <div class="input-with-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                    <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2zM5 8h6a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/>
+                                </svg>
+                                <input type="password" id="login-password" required placeholder="密码" class="mt-1 block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent">
+                            </div>
+                            <button type="submit" id="login-btn" class="w-full gradient-bg text-white font-bold py-3 px-4 rounded-lg hover:opacity-90 transition shadow-md">
+                                登录
+                            </button>
+                            <p class="text-center text-sm text-gray-600">
+                                还没有账户？ 
+                                <span id="show-register-link" class="form-switch-link">立即注册</span>
+                            </p>
+                        </form>
+
+                        <!-- 注册表单 -->
+                        <form id="register-form" class="hidden space-y-4">
+                            <h2 class="text-2xl font-bold text-gray-800">创建账户</h2>
+                            <p class="text-gray-500">开启你们的专属空间</p>
+                            <div class="input-with-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                    <path d="M.05 3.555A2 2 0 0 1 2 2h12a2 2 0 0 1 1.95 1.555L8 8.414.05 3.555ZM0 4.697v7.104l5.803-3.558L0 4.697ZM6.761 8.83l-6.57 4.027A2 2 0 0 0 2 14h12a2 2 0 0 0 1.808-1.144l-6.57-4.027L8 9.586l-1.239-.757Zm3.436-.586L16 11.803V4.697l-5.803 3.558Z"/>
+                                </svg>
+                                <input type="email" id="register-email" required placeholder="邮箱" class="mt-1 block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent">
+                            </div>
+                            <div class="input-with-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                    <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2zM5 8h6a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/>
+                                </svg>
+                                <input type="password" id="register-password" required minlength="6" placeholder="密码 (至少6位)" class="mt-1 block w-full px-3 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent">
+                            </div>
+                            <button type="submit" id="register-btn" class="w-full bg-blue-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-600 transition shadow-md">
+                                注册
+                            </button>
+                            <p class="text-center text-sm text-gray-600">
+                                已有账户？ 
+                                <span id="show-login-link" class="form-switch-link">返回登录</span>
+                            </p>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 绑定伴侣页面 -->
+        <div id="partner-view" class="view p-4">
+            <div class="max-w-md mx-auto text-center bg-white p-8 rounded-2xl shadow-sm mt-10 sm:mt-20">
+                <div class="gradient-bg text-white p-6 rounded-xl mb-6">
+                    <h1 class="text-2xl font-bold mb-2">还差一步</h1>
+                    <p class="text-pink-100">绑定伴侣后即可开始使用</p>
+                </div>
+                <p id="user-email-display" class="text-gray-500 mb-6">已登录: </p>
+                
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-left">
+                    <h3 class="font-semibold text-blue-800 mb-2">绑定说明</h3>
+                    <ul class="text-sm text-blue-700 space-y-1">
+                        <li>• 输入伴侣的注册邮箱发送绑定请求</li>
+                        <li>• 对方登录时会收到确认提示</li>
+                        <li>• 双方都同意后即可开始使用</li>
+                        <li>• 如果对方已向您发送请求，输入对方邮箱即可直接绑定</li>
+                    </ul>
+                </div>
+                
+                <div class="mb-6 text-left">
+                    <label for="partner-email-input" class="block text-sm font-medium text-gray-700 mb-1">
+                        请输入伴侣的注册邮箱
+                    </label>
+                    <input type="email" id="partner-email-input" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent" placeholder="partner@example.com">
+                </div>
+                <button id="connect-partner-btn" class="w-full gradient-bg text-white font-bold py-3 px-4 rounded-lg hover:opacity-90 transition shadow-md">
+                    发送绑定请求
+                </button>
+                
+                <div class="mt-6 pt-4 border-t border-gray-200">
+                    <button id="check-requests-btn" class="text-sm text-blue-500 hover:text-blue-700 mb-2">
+                        检查待处理的绑定请求
+                    </button>
+                    <br>
+                    <button id="logout-btn-partner-view" class="text-sm text-gray-500 hover:text-red-500">
+                        退出登录
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主应用页面 -->
+        <div id="main-app-view" class="view">
+            <header class="sticky top-0 z-10 bg-white/90 backdrop-blur-lg border-b border-gray-200/80 shadow-sm">
+                <div class="container mx-auto max-w-4xl p-4 flex justify-between items-center">
+                    <h1 class="font-artistic text-3xl text-pink-500">My Hui</h1>
+                    <div class="flex items-center space-x-4">
+                        <span id="main-user-email" class="hidden sm:inline text-sm text-gray-500"></span>
+                        <span id="partner-info" class="hidden sm:inline text-xs text-gray-400"></span>
+                        <button id="logout-btn-main-view" class="text-sm text-gray-500 hover:text-red-500">
+                            退出登录
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <main class="p-4">
+                <div class="max-w-2xl mx-auto">
+                    <div class="segmented-control mb-6">
+                        <button id="tab-todos" class="tab-button active">共享清单</button>
+                        <button id="tab-anniversaries" class="tab-button">纪念日</button>
+                    </div>
+                </div>
+
+                <div id="content-todos"></div>
+                <div id="content-anniversaries" class="hidden"></div>
+            </main>
+        </div>
+
+        <!-- 消息提示 -->
+        <div id="toast-message" class="fixed bottom-5 right-5 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg opacity-0 transition-opacity duration-300 z-50"></div>
+    </div>
+
+    <script>
+        // 等待所有脚本加载完成
+        window.addEventListener('DOMContentLoaded', function() {
+            // 检查访问协议
+            if (window.location.protocol === 'file:') {
+                document.getElementById('loading-view').innerHTML = `
+                    <div class="max-w-md mx-auto text-center">
+                        <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-6 py-4 rounded-lg">
+                            <div class="flex items-center mb-3">
+                                <svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                </svg>
+                                <strong class="font-bold">访问方式错误</strong>
+                            </div>
+                            <p class="mb-4">您正在使用file://协议访问，这会导致跨域错误。</p>
+                            <div class="bg-white p-4 rounded border text-left text-sm">
+                                <p class="font-semibold mb-2">请按以下步骤操作：</p>
+                                <ol class="list-decimal list-inside space-y-1">
+                                    <li>打开命令提示符或Anaconda Prompt</li>
+                                    <li>输入：<code class="bg-gray-200 px-1 rounded">F:</code></li>
+                                    <li>输入：<code class="bg-gray-200 px-1 rounded">cd MyHui\\public</code></li>
+                                    <li>输入：<code class="bg-gray-200 px-1 rounded">python -m http.server 8000</code></li>
+                                    <li>在浏览器访问：<code class="bg-gray-200 px-1 rounded">http://localhost:8000</code></li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            // 显示当前访问信息
+            console.log('访问协议:', window.location.protocol);
+            console.log('访问地址:', window.location.href);
+            console.log('Origin:', window.location.origin);
+            // 检查AV是否已加载
+            if (typeof AV === 'undefined') {
+                console.error('LeanCloud SDK未加载，请检查网络连接');
+                document.getElementById('loading-view').innerHTML = `
+                    <div class="max-w-md mx-auto text-center">
+                        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                            <strong class="font-bold">加载失败！</strong>
+                            <span class="block sm:inline">无法连接到服务器，请检查网络连接。</span>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            // --- 初始化 LeanCloud ---
+            try {
+                AV.init({
+                    appId: "jrJXnuJG3a5nR1dilUv27qLp-gzGzoHsz",
+                    appKey: "zQYmxLdBHvwjIxfghNB3NufV",
+                    serverURL: "https://jrjxnujg.lc-cn-n1-shared.com"
+                });
+                console.log('LeanCloud 初始化成功');
+            } catch (error) {
+                console.error('LeanCloud 初始化失败:', error);
+                return;
+            }
+
+        // --- 全局变量 ---
+        const views = { 
+            loading: document.getElementById('loading-view'), 
+            auth: document.getElementById('auth-view'), 
+            partner: document.getElementById('partner-view'), 
+            main: document.getElementById('main-app-view') 
+        };
+        const contentTodos = document.getElementById('content-todos');
+        const contentAnniversaries = document.getElementById('content-anniversaries');
+        let sharedDataObject = null;
+        let syncInterval = null; // 替换liveQuery
+
+        // --- 辅助函数 ---
+        function switchView(viewName) { 
+            Object.values(views).forEach(v => v.classList.remove('active')); 
+            if(views[viewName]) views[viewName].classList.add('active'); 
+        }
+
+        function showToast(message, isError = false) { 
+            const toast = document.getElementById('toast-message'); 
+            toast.textContent = message; 
+            toast.style.backgroundColor = isError ? '#ef4444' : '#22c55e'; 
+            toast.style.opacity = '1'; 
+            setTimeout(() => { toast.style.opacity = '0'; }, 3000); 
+        }
+
+        function escapeHtml(unsafe) { 
+            return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); 
+        }
+
+        // --- 绑定伴侣功能（完全不修改用户表） ---
+        async function bindPartnerDirectly(partnerEmail) {
+            const currentUser = AV.User.current();
+            
+            if (!currentUser) {
+                throw new Error('请先登录！');
+            }
+            if (!partnerEmail) {
+                throw new Error('请输入伴侣的邮箱');
+            }
+            if (partnerEmail === currentUser.get('email')) {
+                throw new Error('不能绑定自己哦！');
+            }
+
+            // 查找伴侣用户
+            const userQuery = new AV.Query('_User');
+            userQuery.equalTo('email', partnerEmail);
+            const partner = await userQuery.first();
+
+            if (!partner) {
+                throw new Error('找不到该用户，请确认邮箱是否正确');
+            }
+
+            const PartnerRequest = AV.Object.extend('PartnerRequest');
+            
+            // 检查当前用户是否已经绑定
+            const currentUserBindQuery = new AV.Query(PartnerRequest);
+            currentUserBindQuery.equalTo('fromUser', currentUser);
+            currentUserBindQuery.equalTo('status', 'accepted');
+            const currentUserBound = await currentUserBindQuery.first();
+            
+            if (currentUserBound) {
+                throw new Error('您已经绑定了伴侣！');
+            }
+
+            // 检查对方是否已经绑定了其他人
+            const partnerBindQuery = new AV.Query(PartnerRequest);
+            partnerBindQuery.equalTo('fromUser', partner);
+            partnerBindQuery.equalTo('status', 'accepted');
+            const partnerBound = await partnerBindQuery.first();
+            
+            if (partnerBound) {
+                throw new Error('该用户已经绑定了另一半啦！');
+            }
+
+            // 检查是否已经有绑定请求
+            const existingQuery = new AV.Query(PartnerRequest);
+            existingQuery.equalTo('fromUser', currentUser);
+            existingQuery.equalTo('toUser', partner);
+            existingQuery.equalTo('status', 'pending');
+            const existing = await existingQuery.first();
+            
+            if (existing) {
+                throw new Error('已经向该用户发送过绑定请求，请等待对方确认');
+            }
+
+            // 检查是否有对方发来的请求
+            const incomingQuery = new AV.Query(PartnerRequest);
+            incomingQuery.equalTo('fromUser', partner);
+            incomingQuery.equalTo('toUser', currentUser);
+            incomingQuery.equalTo('status', 'pending');
+            const incoming = await incomingQuery.first();
+
+            if (incoming) {
+                // 有对方的请求，接受绑定
+                try {
+                    // 更新对方的请求状态为已接受
+                    incoming.set('status', 'accepted');
+                    await incoming.save();
+                    
+                    // 创建当前用户的接受记录
+                    const acceptRecord = new PartnerRequest();
+                    acceptRecord.set('fromUser', currentUser);
+                    acceptRecord.set('toUser', partner);
+                    acceptRecord.set('status', 'accepted');
+                    acceptRecord.set('fromEmail', currentUser.get('email'));
+                    acceptRecord.set('toEmail', partnerEmail);
+                    acceptRecord.set('bindTime', new Date());
+                    
+                    const acl = new AV.ACL();
+                    acl.setReadAccess(currentUser, true);
+                    acl.setWriteAccess(currentUser, true);
+                    acl.setReadAccess(partner, true);
+                    acceptRecord.setACL(acl);
+                    
+                    await acceptRecord.save();
+                    
+                    return { success: true, message: '绑定成功！您接受了对方的绑定请求。' };
+                } catch (error) {
+                    console.error('绑定过程中出现错误:', error);
+                    throw new Error('绑定过程中出现错误，请重试');
+                }
+            } else {
+                // 创建新的绑定请求
+                const request = new PartnerRequest();
+                request.set('fromUser', currentUser);
+                request.set('toUser', partner);
+                request.set('status', 'pending');
+                request.set('fromEmail', currentUser.get('email'));
+                request.set('toEmail', partnerEmail);
+                request.set('requestTime', new Date());
+                
+                // 设置ACL权限
+                const acl = new AV.ACL();
+                acl.setReadAccess(currentUser, true);
+                acl.setWriteAccess(currentUser, true);
+                acl.setReadAccess(partner, true);
+                acl.setWriteAccess(partner, true);
+                request.setACL(acl);
+                
+                await request.save();
+                
+                throw new Error('绑定请求已发送！请让对方也输入您的邮箱来完成绑定。');
+            }
+        }
+
+        // --- 检查待处理的绑定请求 ---
+        async function checkPendingRequests() {
+            const currentUser = AV.User.current();
+            if (!currentUser) return;
+
+            try {
+                const PartnerRequest = AV.Object.extend('PartnerRequest');
+                const query = new AV.Query(PartnerRequest);
+                query.equalTo('toUser', currentUser);
+                query.equalTo('status', 'pending');
+                query.include('fromUser');
+                query.descending('createdAt');
+                
+                const requests = await query.find();
+                
+                if (requests.length > 0) {
+                    const request = requests[0];
+                    const fromUser = request.get('fromUser');
+                    const fromEmail = request.get('fromEmail') || fromUser.get('email');
+                    
+                    // 显示确认对话框
+                    const shouldBind = confirm(`${fromEmail} 想要与您绑定为伴侣，是否同意？\n\n点击"确定"同意绑定\n点击"取消"拒绝绑定`);
+                    
+                    if (shouldBind) {
+                        try {
+                            // 更新请求状态
+                            request.set('status', 'accepted');
+                            request.set('acceptTime', new Date());
+                            await request.save();
+                            
+                            // 创建反向的接受记录
+                            const reverseRequest = new PartnerRequest();
+                            reverseRequest.set('fromUser', currentUser);
+                            reverseRequest.set('toUser', fromUser);
+                            reverseRequest.set('status', 'accepted');
+                            reverseRequest.set('fromEmail', currentUser.get('email'));
+                            reverseRequest.set('toEmail', fromEmail);
+                            reverseRequest.set('bindTime', new Date());
+                            
+                            const acl = new AV.ACL();
+                            acl.setReadAccess(currentUser, true);
+                            acl.setWriteAccess(currentUser, true);
+                            acl.setReadAccess(fromUser, true);
+                            reverseRequest.setACL(acl);
+                            
+                            await reverseRequest.save();
+                            
+                            showToast('绑定成功！');
+                            await handleUserSession(currentUser);
+                        } catch (error) {
+                            console.error('绑定失败:', error);
+                            showToast(`绑定失败: ${error.message}`, true);
+                        }
+                    } else {
+                        // 拒绝请求
+                        try {
+                            request.set('status', 'rejected');
+                            request.set('rejectTime', new Date());
+                            await request.save();
+                            showToast('已拒绝绑定请求');
+                        } catch (error) {
+                            console.error('拒绝请求失败:', error);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('检查绑定请求失败:', error);
+            }
+        }
+
+        // --- 通过PartnerRequest表获取伴侣信息 ---
+        async function getPartnerFromRequests(user) {
+            try {
+                const PartnerRequest = AV.Object.extend('PartnerRequest');
+                
+                // 查找当前用户作为发起者的已接受请求
+                const query1 = new AV.Query(PartnerRequest);
+                query1.equalTo('fromUser', user);
+                query1.equalTo('status', 'accepted');
+                query1.include('toUser');
+                
+                // 查找当前用户作为接收者的已接受请求
+                const query2 = new AV.Query(PartnerRequest);
+                query2.equalTo('toUser', user);
+                query2.equalTo('status', 'accepted');
+                query2.include('fromUser');
+                
+                const mainQuery = AV.Query.or(query1, query2);
+                const request = await mainQuery.first();
+                
+                if (request) {
+                    // 判断当前用户是发起者还是接收者，返回对应的伴侣
+                    const fromUser = request.get('fromUser');
+                    const toUser = request.get('toUser');
+                    
+                    if (fromUser.id === user.id) {
+                        return toUser;
+                    } else {
+                        return fromUser;
+                    }
+                }
+                
+                return null;
+            } catch (error) {
+                console.error('获取伴侣信息失败:', error);
+                return null;
+            }
+        }
+
+        // --- 检查用户是否已有伴侣（仅通过PartnerRequest表） ---
+        async function checkUserPartnerStatus(user) {
+            return await getPartnerFromRequests(user);
+        }
+
+        // --- 用户会话处理 ---
+        async function handleUserSession(user) {
+            // 清除之前的同步定时器
+            if (syncInterval) {
+                clearInterval(syncInterval);
+                syncInterval = null;
+            }
+            
+            if (user) {
+                try {
+                    await user.fetch();
+                    
+                    // 使用新的方法检查伴侣状态
+                    const partner = await checkUserPartnerStatus(user);
+                    
+                    if (partner) {
+                        await partner.fetch();
+                        const sharedDocId = [user.id, partner.id].sort().join('-');
+                        await setupSharedData(sharedDocId);
+                        
+                        document.getElementById('main-user-email').textContent = user.get('email');
+                        document.getElementById('partner-info').textContent = `♥ ${partner.get('email')}`;
+                        switchView('main');
+                        
+                        // 启动定期同步（每10秒同步一次）
+                        syncInterval = setInterval(async () => {
+                            try {
+                                await refreshSharedData(sharedDocId);
+                            } catch (error) {
+                                console.error('同步数据失败:', error);
+                            }
+                        }, 10000);
+                    } else {
+                        document.getElementById('user-email-display').textContent = `已登录: ${user.get('email')}`;
+                        switchView('partner');
+                        
+                        // 检查是否有待处理的绑定请求
+                        setTimeout(() => {
+                            checkPendingRequests();
+                        }, 1000);
+                    }
+                } catch (error) {
+                    console.error('获取用户信息失败:', error);
+                    showToast(`获取用户信息失败: ${error.message}`, true);
+                    await AV.User.logOut();
+                    switchView('auth');
+                }
+            } else {
+                switchView('auth');
+            }
+        }
+        
+        // --- 共享数据管理（不使用LiveQuery） ---
+        async function setupSharedData(sharedDocId) {
+            const query = new AV.Query('SharedData');
+            query.equalTo('sharedId', sharedDocId);
+            let sharedDoc = await query.first();
+            
+            if (!sharedDoc) {
+                const SharedData = AV.Object.extend('SharedData');
+                sharedDoc = new SharedData();
+                sharedDoc.set('sharedId', sharedDocId);
+                sharedDoc.set('todos', []);
+                sharedDoc.set('anniversaries', []);
+                
+                // 设置ACL权限
+                const acl = new AV.ACL();
+                const currentUser = AV.User.current();
+                const partner = await getPartnerFromRequests(currentUser);
+                
+                if (partner) {
+                    acl.setReadAccess(currentUser, true);
+                    acl.setWriteAccess(currentUser, true);
+                    acl.setReadAccess(partner, true);
+                    acl.setWriteAccess(partner, true);
+                    sharedDoc.setACL(acl);
+                }
+                
+                await sharedDoc.save();
+            }
+            
+            sharedDataObject = sharedDoc;
+            renderAll(sharedDataObject.attributes);
+        }
+
+        // --- 刷新共享数据 ---
+        async function refreshSharedData(sharedDocId) {
+            if (!sharedDataObject) return;
+            
+            try {
+                const query = new AV.Query('SharedData');
+                query.equalTo('sharedId', sharedDocId);
+                const updatedDoc = await query.first();
+                
+                if (updatedDoc && updatedDoc.updatedAt > sharedDataObject.updatedAt) {
+                    sharedDataObject = updatedDoc;
+                    renderAll(updatedDoc.attributes);
+                    console.log('数据已同步');
+                }
+            } catch (error) {
+                console.error('刷新数据失败:', error);
+            }
+        }
+
+        // --- 手动刷新按钮 ---
+        function addRefreshButton() {
+            const header = document.querySelector('#main-app-view header .container');
+            if (header && !document.getElementById('refresh-btn')) {
+                const refreshBtn = document.createElement('button');
+                refreshBtn.id = 'refresh-btn';
+                refreshBtn.className = 'text-sm text-gray-500 hover:text-pink-500 mr-2';
+                refreshBtn.innerHTML = '🔄 刷新';
+                refreshBtn.title = '手动同步数据';
+                
+                refreshBtn.addEventListener('click', async () => {
+                    refreshBtn.textContent = '同步中...';
+                    refreshBtn.disabled = true;
+                    
+                    try {
+                        const currentUser = AV.User.current();
+                        const partner = await getPartnerFromRequests(currentUser);
+                        if (partner) {
+                            const sharedDocId = [currentUser.id, partner.id].sort().join('-');
+                            await refreshSharedData(sharedDocId);
+                            showToast('数据同步成功');
+                        }
+                    } catch (error) {
+                        showToast('同步失败', true);
+                    } finally {
+                        refreshBtn.textContent = '🔄 刷新';
+                        refreshBtn.disabled = false;
+                    }
+                });
+                
+                const emailSpan = document.getElementById('main-user-email');
+                header.insertBefore(refreshBtn, emailSpan);
+            }
+        }
+
+        // --- 渲染函数 ---
+        function renderAll(data) { 
+            renderTodos(data.todos || []); 
+            renderAnniversaries(data.anniversaries || []); 
+        }
+
+        function renderTodos(todos) { 
+            const pendingTodos = todos.filter(t => !t.completed).sort((a,b) => new Date(a.createdAt) - new Date(b.createdAt)); 
+            const completedTodos = todos.filter(t => t.completed).sort((a,b) => new Date(a.createdAt) - new Date(b.createdAt)); 
+            const progress = todos.length > 0 ? (completedTodos.length / todos.length) * 100 : 0; 
+            
+            contentTodos.innerHTML = `
+                <div class="space-y-6 max-w-2xl mx-auto">
+                    <div class="bg-white p-6 rounded-xl shadow-sm">
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="font-semibold text-gray-700">任务进度</h3>
+                            <span class="text-sm font-medium text-pink-500">${completedTodos.length} / ${todos.length}</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-3">
+                            <div class="gradient-bg h-3 rounded-full transition-all duration-300" style="width: ${progress}%"></div>
+                        </div>
+                        ${progress === 100 && todos.length > 0 ? '<p class="text-center text-pink-500 font-medium mt-2">🎉 所有任务完成！</p>' : ''}
+                    </div>
+                    
+                    <form id="add-todo-form" class="bg-white p-4 rounded-xl shadow-sm">
+                        <div class="flex gap-3">
+                            <input type="text" id="todo-input" class="flex-grow p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-400 focus:border-transparent" placeholder="添加新的待办事项..." required>
+                            <button type="submit" class="gradient-bg text-white px-6 rounded-lg hover:opacity-90 transition-all font-semibold">添加</button>
+                        </div>
+                    </form>
+                    
+                    <div id="pending-todos-container"></div>
+                    <div id="completed-todos-container"></div>
+                </div>
+            `; 
+            
+            const pendingContainer = document.getElementById('pending-todos-container'); 
+            if(pendingTodos.length > 0) { 
+                pendingContainer.innerHTML = `
+                    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                        <h3 class="font-semibold text-gray-800 p-4 border-b border-gray-100">待办事项 (${pendingTodos.length})</h3>
+                        <ul class="divide-y divide-gray-100">
+                            ${pendingTodos.map(renderTodoItem).join('')}
+                        </ul>
+                    </div>
+                `; 
+            } 
+            
+            const completedContainer = document.getElementById('completed-todos-container'); 
+            if(completedTodos.length > 0) { 
+                completedContainer.innerHTML = `
+                    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                        <h3 class="font-semibold text-gray-800 p-4 border-b border-gray-100">已完成 (${completedTodos.length})</h3>
+                        <ul class="divide-y divide-gray-100">
+                            ${completedTodos.map(renderTodoItem).join('')}
+                        </ul>
+                    </div>
+                `; 
+            } 
+            
+            // 绑定事件
+            document.getElementById('add-todo-form').addEventListener('submit', handleAddTodo); 
+            document.querySelectorAll('input[type="checkbox"]').forEach(el => el.addEventListener('change', handleToggleTodo)); 
+            document.querySelectorAll('.delete-btn').forEach(el => el.addEventListener('click', handleDeleteTodo)); 
+        }
+
+        function renderTodoItem(todo) { 
+            const createdAt = new Date(todo.createdAt).toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' }); 
+            return `
+                <li class="todo-item flex items-center p-4 transition-colors hover:bg-gray-50">
+                    <input type="checkbox" data-id="${todo.id}" class="h-5 w-5 rounded border-gray-300 text-pink-500 focus:ring-pink-500 cursor-pointer" ${todo.completed ? 'checked' : ''}>
+                    <div class="ml-4 flex-grow">
+                        <span class="text-gray-800 ${todo.completed ? 'line-through text-gray-400' : ''}">${escapeHtml(todo.text)}</span>
+                        <p class="text-xs text-gray-400 mt-1">${createdAt} 创建</p>
+                    </div>
+                    <button data-id="${todo.id}" class="delete-btn ml-auto text-gray-400 hover:text-red-500 opacity-0 transition-all p-2 rounded-full hover:bg-red-50">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                    </button>
+                </li>
+            `; 
+        }
+
+        function renderAnniversaries(anniversaries) { 
+            const today = new Date(); 
+            today.setHours(0,0,0,0); 
+            const upcomingAnni = anniversaries.filter(a => new Date(a.date) >= today).sort((a,b) => new Date(a.date) - new Date(b.date)); 
+            const pastAnni = anniversaries.filter(a => new Date(a.date) < today).sort((a,b) => new Date(b.date) - new Date(a.date)); 
+            
+            contentAnniversaries.innerHTML = `
+                <div class="space-y-8 max-w-4xl mx-auto">
+                    <div class="bg-white p-6 rounded-xl shadow-sm">
+                        <h3 class="font-semibold mb-4 text-gray-800 flex items-center">
+                            <svg class="w-5 h-5 mr-2 text-pink-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+                            </svg>
+                            添加新的纪念日
+                        </h3>
+                        <form id="add-anniversary-form" class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+                            <div class="sm:col-span-2">
+                                <label for="anniversary-title" class="block text-sm font-medium text-gray-600 mb-1">标题</label>
+                                <input type="text" id="anniversary-title" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent" placeholder="例如：我们的纪念日" required>
+                            </div>
+                            <div>
+                                <label for="anniversary-date" class="block text-sm font-medium text-gray-600 mb-1">日期</label>
+                                <input type="date" id="anniversary-date" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent" required>
+                            </div>
+                            <button type="submit" class="sm:col-span-3 w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition-colors font-semibold">
+                                添加纪念日
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <div id="upcoming-anniversaries-container"></div>
+                    <div id="past-anniversaries-container"></div>
+                </div>
+            `; 
+            
+            const upcomingContainer = document.getElementById('upcoming-anniversaries-container'); 
+            if(upcomingAnni.length > 0) { 
+                upcomingContainer.innerHTML = `
+                    <div>
+                        <h3 class="font-semibold text-gray-800 mb-4 text-xl flex items-center">
+                            <svg class="w-6 h-6 mr-2 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 2L13.09 8.26L20 9L15 13.74L16.18 20.02L10 16.77L3.82 20.02L5 13.74L0 9L6.91 8.26L10 2Z" clip-rule="evenodd"></path>
+                            </svg>
+                            即将到来 (${upcomingAnni.length})
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            ${upcomingAnni.map(renderAnniversaryCard).join('')}
+                        </div>
+                    </div>
+                `; 
+            } 
+            
+            const pastContainer = document.getElementById('past-anniversaries-container'); 
+            if(pastAnni.length > 0) { 
+                pastContainer.innerHTML = `
+                    <div>
+                        <h3 class="font-semibold text-gray-800 mb-4 text-xl flex items-center">
+                            <svg class="w-6 h-6 mr-2 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+                            </svg>
+                            已经历 (${pastAnni.length})
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            ${pastAnni.map(renderAnniversaryCard).join('')}
+                        </div>
+                    </div>
+                `; 
+            }
+            
+            // 绑定事件
+            document.getElementById('add-anniversary-form').addEventListener('submit', handleAddAnniversary); 
+            document.querySelectorAll('.delete-anniversary-btn').forEach(btn => btn.addEventListener('click', handleDeleteAnniversary)); 
+        }
+
+        function renderAnniversaryCard(ann) { 
+            const date = new Date(ann.date); 
+            const today = new Date(); 
+            today.setHours(0,0,0,0); 
+            const daysDiff = Math.ceil((date - today) / (1000 * 60 * 60 * 24)); 
+            
+            let diffText, colorClass, bgClass; 
+            if (daysDiff > 0) { 
+                diffText = `还有 <span class="font-bold text-2xl">${daysDiff}</span> 天`; 
+                colorClass = 'text-pink-500'; 
+                bgClass = 'bg-pink-50 border-pink-200';
+            } else if (daysDiff === 0) { 
+                diffText = `<span class="font-bold text-2xl">今天!</span>`; 
+                colorClass = 'text-yellow-600'; 
+                bgClass = 'bg-yellow-50 border-yellow-200';
+            } else { 
+                diffText = `已过 <span class="font-bold">${-daysDiff}</span> 天`; 
+                colorClass = 'text-gray-500'; 
+                bgClass = 'bg-gray-50 border-gray-200';
+            } 
+            
+            return `
+                <div class="anniversary-card ${bgClass} border-2 p-6 rounded-xl relative transition-all hover:shadow-md">
+                    <button data-id="${ann.id}" class="delete-anniversary-btn absolute top-3 right-3 text-gray-300 hover:text-red-500 opacity-0 transition-all p-1 rounded-full hover:bg-white">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                    <div class="flex items-start justify-between">
+                        <div class="flex-grow">
+                            <h3 class="font-bold text-lg text-gray-800 mb-1">${escapeHtml(ann.title)}</h3>
+                            <p class="text-gray-500 text-sm">${date.getFullYear()}年${date.getMonth()+1}月${date.getDate()}日</p>
+                        </div>
+                        <div class="text-right ${colorClass}">
+                            <p class="text-sm leading-tight">${diffText}</p>
+                        </div>
+                    </div>
+                </div>
+            `; 
+        }
+        
+        // --- 事件处理函数 ---
+        async function handleAddTodo(e) { 
+            e.preventDefault(); 
+            const input = document.getElementById('todo-input'); 
+            if(!input.value.trim()) return; 
+            
+            const newTodo = { 
+                id: crypto.randomUUID(), 
+                text: input.value.trim(), 
+                completed: false, 
+                createdAt: new Date().toISOString() 
+            }; 
+            
+            const currentTodos = sharedDataObject.get('todos') || []; 
+            sharedDataObject.set('todos', [...currentTodos, newTodo]); 
+            await sharedDataObject.save(); 
+            input.value = ''; 
+            showToast('任务添加成功！');
+            
+            // 立即刷新显示
+            renderAll(sharedDataObject.attributes);
+        }
+
+        async function handleToggleTodo(e) { 
+            const todoId = e.target.dataset.id; 
+            const currentTodos = sharedDataObject.get('todos') || []; 
+            const updatedTodos = currentTodos.map(t => t.id === todoId ? {...t, completed: !t.completed} : t); 
+            sharedDataObject.set('todos', updatedTodos); 
+            await sharedDataObject.save(); 
+            
+            const todo = updatedTodos.find(t => t.id === todoId);
+            showToast(todo.completed ? '任务完成！🎉' : '任务标记为未完成');
+            
+            // 立即刷新显示
+            renderAll(sharedDataObject.attributes);
+        }
+
+        async function handleDeleteTodo(e) { 
+            const todoId = e.currentTarget.dataset.id; 
+            if(confirm("确定删除这个待办事项吗？")) { 
+                const currentTodos = sharedDataObject.get('todos') || []; 
+                const updatedTodos = currentTodos.filter(t => t.id !== todoId); 
+                sharedDataObject.set('todos', updatedTodos); 
+                await sharedDataObject.save(); 
+                showToast('任务已删除');
+                
+                // 立即刷新显示
+                renderAll(sharedDataObject.attributes);
+            } 
+        }
+
+        async function handleAddAnniversary(e) { 
+            e.preventDefault(); 
+            const titleInput = document.getElementById('anniversary-title'); 
+            const dateInput = document.getElementById('anniversary-date'); 
+            if(!titleInput.value.trim() || !dateInput.value) return; 
+            
+            const newAnniversary = { 
+                id: crypto.randomUUID(), 
+                title: titleInput.value.trim(), 
+                date: new Date(dateInput.value).toISOString() 
+            }; 
+            
+            const currentAnnis = sharedDataObject.get('anniversaries') || []; 
+            sharedDataObject.set('anniversaries', [...currentAnnis, newAnniversary]); 
+            await sharedDataObject.save(); 
+            titleInput.value = ''; 
+            dateInput.value = ''; 
+            showToast('纪念日添加成功！');
+            
+            // 立即刷新显示
+            renderAll(sharedDataObject.attributes);
+        }
+
+        async function handleDeleteAnniversary(e) { 
+            const annId = e.currentTarget.dataset.id; 
+            if(confirm("确定删除这个纪念日吗？")) { 
+                const currentAnnis = sharedDataObject.get('anniversaries') || []; 
+                const updatedAnni = currentAnnis.filter(a => a.id !== annId); 
+                sharedDataObject.set('anniversaries', updatedAnni); 
+                await sharedDataObject.save(); 
+                showToast('纪念日已删除');
+                
+                // 立即刷新显示
+                renderAll(sharedDataObject.attributes);
+            } 
+        }
+
+        // --- 认证事件绑定 ---
+        document.getElementById('show-register-link').addEventListener('click', () => { 
+            document.getElementById('login-form').classList.add('hidden'); 
+            document.getElementById('register-form').classList.remove('hidden'); 
+        });
+
+        document.getElementById('show-login-link').addEventListener('click', () => { 
+            document.getElementById('register-form').classList.add('hidden'); 
+            document.getElementById('login-form').classList.remove('hidden'); 
+        });
+
+        document.getElementById('register-form').addEventListener('submit', async (e) => { 
+            e.preventDefault(); 
+            const registerBtn = document.getElementById('register-btn');
+            registerBtn.disabled = true; 
+            registerBtn.textContent = '注册中...';
+            
+            const email = document.getElementById('register-email').value; 
+            const password = document.getElementById('register-password').value; 
+            
+            try { 
+                const user = new AV.User();
+                user.setUsername(email); 
+                user.setEmail(email); 
+                user.setPassword(password);
+                await user.signUp();
+                showToast('注册成功！');
+                await handleUserSession(AV.User.current());
+            } catch (error) { 
+                console.error('注册失败:', error);
+                showToast(`注册失败: ${error.message}`, true); 
+            } finally {
+                registerBtn.disabled = false; 
+                registerBtn.textContent = '注册';
+            }
+        });
+
+        document.getElementById('login-form').addEventListener('submit', async (e) => { 
+            e.preventDefault(); 
+            const loginBtn = document.getElementById('login-btn');
+            loginBtn.disabled = true; 
+            loginBtn.textContent = '登录中...';
+            
+            const email = document.getElementById('login-email').value; 
+            const password = document.getElementById('login-password').value; 
+            
+            try { 
+                const user = await AV.User.logIn(email, password);
+                showToast('登录成功！');
+                await handleUserSession(user);
+            } catch (error) { 
+                console.error('登录失败:', error);
+                showToast(`登录失败: ${error.message}`, true);
+            } finally {
+                loginBtn.disabled = false; 
+                loginBtn.textContent = '登录';
+            }
+        });
+        
+        // --- 绑定伴侣 ---
+        async function connectPartner() {
+            const btn = document.getElementById('connect-partner-btn');
+            btn.disabled = true; 
+            btn.textContent = '绑定中...';
+            const partnerEmail = document.getElementById('partner-email-input').value.trim();
+            
+            try {
+                const result = await bindPartnerDirectly(partnerEmail);
+                showToast(result.message);
+                await handleUserSession(AV.User.current());
+            } catch(error) {
+                console.error('绑定失败:', error);
+                showToast(`绑定失败: ${error.message}`, true);
+            } finally {
+                btn.disabled = false; 
+                btn.textContent = '绑定伴侣';
+            }
+        }
+
+        document.getElementById('connect-partner-btn').addEventListener('click', connectPartner);
+
+        // 手动检查绑定请求按钮
+        document.getElementById('check-requests-btn').addEventListener('click', async () => {
+            const btn = document.getElementById('check-requests-btn');
+            btn.disabled = true;
+            btn.textContent = '检查中...';
+            
+            try {
+                await checkPendingRequests();
+            } catch (error) {
+                showToast('检查请求失败', true);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '检查待处理的绑定请求';
+            }
+        });
+
+        // --- 退出登录 ---
+        async function handleLogout() { 
+            if (confirm('确定要退出登录吗？')) {
+                // 清除同步定时器
+                if (syncInterval) {
+                    clearInterval(syncInterval);
+                    syncInterval = null;
+                }
+                
+                await AV.User.logOut(); 
+                showToast('已退出登录');
+                handleUserSession(null); 
+            }
+        }
+
+        document.getElementById('logout-btn-partner-view').addEventListener('click', handleLogout);
+        document.getElementById('logout-btn-main-view').addEventListener('click', handleLogout);
+
+        // --- 标签切换 ---
+        const tabs = document.querySelectorAll('.tab-button');
+        tabs.forEach(tab => { 
+            tab.addEventListener('click', () => { 
+                tabs.forEach(t => t.classList.remove('active')); 
+                tab.classList.add('active'); 
+                contentTodos.classList.toggle('hidden', tab.id !== 'tab-todos'); 
+                contentAnniversaries.classList.toggle('hidden', tab.id !== 'tab-anniversaries'); 
+            }); 
+        });
+
+        // --- 启动应用 ---
+        setTimeout(() => {
+            handleUserSession(AV.User.current());
+            // 如果用户已登录且在主界面，添加刷新按钮
+            setTimeout(() => {
+                if (views.main.classList.contains('active')) {
+                    addRefreshButton();
+                }
+            }, 2000);
+        }, 1000); // 短暂延迟显示加载效果
+
+        }); // DOMContentLoaded 结束
+    </script>
+</body>
+</html>
